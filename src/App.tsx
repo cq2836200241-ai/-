@@ -35,8 +35,9 @@ function WordCard({
   isMastered: boolean;
   viewMode: string;
   onToggleMastered: () => void;
-  onOpenDetail: () => void;
+  onOpenDetail: (rect: DOMRect) => void;
 }) {
+  const cardRef = useRef<HTMLDivElement>(null);
   const [isFlipped, setIsFlipped] = useState(false);
   const [showAddedMsg, setShowAddedMsg] = useState(false);
   const [shouldBlur, setShouldBlur] = useState(
@@ -78,49 +79,96 @@ function WordCard({
     };
   }, [isMastered, viewMode]);
 
+  const hoverTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const clickTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const isHoveringRef = useRef(false);
+
   useEffect(() => {
     return () => {
       if (flipTimeoutRef.current) clearTimeout(flipTimeoutRef.current);
+      if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+      if (clickTimeoutRef.current) clearTimeout(clickTimeoutRef.current);
+      isHoveringRef.current = false;
     };
   }, []);
 
-  const handleCardClick = () => {
-    if (!isFlipped) {
-      setIsFlipped(true);
-      if (flipTimeoutRef.current) clearTimeout(flipTimeoutRef.current);
-      flipTimeoutRef.current = setTimeout(() => {
-        setIsFlipped(false);
-      }, 3000);
+  const handleCardClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    
+    if (clickTimeoutRef.current) {
+      // Double click
+      clearTimeout(clickTimeoutRef.current);
+      clickTimeoutRef.current = null;
+      if (cardRef.current) {
+        onOpenDetail(cardRef.current.getBoundingClientRect());
+      }
+      playPronunciation();
     } else {
-      setIsFlipped(false);
-      if (flipTimeoutRef.current) clearTimeout(flipTimeoutRef.current);
+      // Single click
+      clickTimeoutRef.current = setTimeout(() => {
+        if (!isFlipped) {
+          setIsFlipped(true);
+          if (flipTimeoutRef.current) clearTimeout(flipTimeoutRef.current);
+          flipTimeoutRef.current = setTimeout(() => {
+            setIsFlipped(false);
+          }, 3000);
+        } else {
+          setIsFlipped(false);
+          if (flipTimeoutRef.current) clearTimeout(flipTimeoutRef.current);
+        }
+        clickTimeoutRef.current = null;
+      }, 250); // 250ms delay for double click logic
     }
   };
 
-  const handleDoubleClick = (e: React.MouseEvent) => {
-    e.stopPropagation();
-    onOpenDetail();
-  };
-
-  const playPronunciation = (e: React.MouseEvent) => {
-    e.stopPropagation();
+  const playPronunciation = (e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
     if ("speechSynthesis" in window) {
       window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(cleanWord);
-      utterance.lang = "en-US";
-      utterance.rate = 0.85;
-      window.speechSynthesis.speak(utterance);
+
+      const engUtterance = new SpeechSynthesisUtterance(cleanWord);
+      engUtterance.lang = "en-US";
+      engUtterance.rate = 0.85;
+
+      const zhUtterance = new SpeechSynthesisUtterance(item.brief);
+      zhUtterance.lang = "zh-CN";
+      zhUtterance.rate = 0.85;
+
+      engUtterance.onend = () => {
+        window.speechSynthesis.speak(zhUtterance);
+      };
+
+      zhUtterance.onend = () => {
+        if (isHoveringRef.current) {
+          playPronunciation();
+        }
+      };
+
+      window.speechSynthesis.speak(engUtterance);
     }
+  };
+
+  const handleMouseEnterButton = () => {
+    isHoveringRef.current = true;
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
+    hoverTimeoutRef.current = setTimeout(() => {
+      playPronunciation();
+    }, 600);
+  };
+
+  const handleMouseLeaveButton = () => {
+    isHoveringRef.current = false;
+    if (hoverTimeoutRef.current) clearTimeout(hoverTimeoutRef.current);
   };
 
   return (
     <motion.div
+      ref={cardRef}
       initial={{ opacity: 0, scale: 0.95 }}
       animate={{ opacity: 1, scale: 1 }}
-      className="relative w-full h-32 sm:h-36 cursor-pointer group"
+      className={`relative w-full h-32 sm:h-36 cursor-pointer group ${isSelected ? "z-[60]" : ""}`}
       style={{ perspective: "1000px" }}
       onClick={handleCardClick}
-      onDoubleClick={handleDoubleClick}
     >
       <motion.div
         className={`w-full h-full relative duration-500 transition-all ${shouldBlur ? "opacity-50 blur-[1.5px] grayscale hover:blur-none hover:opacity-100 hover:grayscale-0" : ""}`}
@@ -169,6 +217,8 @@ function WordCard({
 
             <button
               onClick={playPronunciation}
+              onMouseEnter={handleMouseEnterButton}
+              onMouseLeave={handleMouseLeaveButton}
               className={`p-2 sm:p-2.5 rounded-full z-10 transition-all flex-shrink-0 bg-emerald-500 hover:bg-emerald-600 text-white shadow-md active:scale-95`}
               aria-label={`Pronounce ${item.word}`}
             >
@@ -255,7 +305,9 @@ function WordCard({
             <button
               onClick={(e) => {
                 e.stopPropagation();
-                onOpenDetail();
+                if (cardRef.current) {
+                  onOpenDetail(cardRef.current.getBoundingClientRect());
+                }
               }}
               className="px-3 py-1.5 bg-emerald-600 text-white text-[10px] sm:text-xs font-bold uppercase tracking-wider rounded-md hover:bg-emerald-700 transition-colors shadow-sm whitespace-nowrap"
             >
@@ -270,7 +322,10 @@ function WordCard({
 
 export default function App() {
   const [currentPage, setCurrentPage] = useState(1);
-  const [selectedWord, setSelectedWord] = useState<WordItem | null>(null);
+  const [selectedWord, setSelectedWord] = useState<{
+    word: WordItem;
+    rect: DOMRect;
+  } | null>(null);
   const [masteredWords, setMasteredWords] = useState<Record<number, boolean>>(
     {},
   );
@@ -423,7 +478,7 @@ export default function App() {
         <div className="flex-1 p-3 sm:p-6 grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-3 sm:gap-4 overflow-y-auto content-start pb-24">
           {currentWords.length > 0 ? (
             currentWords.map((item) => {
-              const isSelected = selectedWord?.id === item.id;
+              const isSelected = selectedWord?.word.id === item.id;
               const cleanWord = item.word.split(" (")[0];
               const phonetic =
                 (phoneticsData as Record<string, string>)[cleanWord] ||
@@ -438,7 +493,7 @@ export default function App() {
                   isMastered={isMastered}
                   viewMode={viewMode}
                   onToggleMastered={() => toggleMastered(item.id)}
-                  onOpenDetail={() => setSelectedWord(item)}
+                  onOpenDetail={(rect) => setSelectedWord({ word: item, rect })}
                 />
               );
             })
@@ -528,10 +583,19 @@ export default function App() {
         </div>
       </footer>
 
-      {/* Detail Modal / Sidebar Equivalent */}
+      {/* Overlay Backdrop */}
+      {selectedWord && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/10 backdrop-blur-sm transition-all"
+          onClick={() => setSelectedWord(null)}
+        />
+      )}
+
+      {/* Detail Modal / Floating Window */}
       {selectedWord && (
         <WordDetailModal
-          word={selectedWord}
+          word={selectedWord.word}
+          triggerRect={selectedWord.rect}
           onClose={() => setSelectedWord(null)}
         />
       )}
