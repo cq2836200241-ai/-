@@ -1,9 +1,14 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;900&family=JetBrains+Mono:wght@400;500&family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,500&display=swap');
 @import "tailwindcss";
+
+@custom-variant dark (&:where(.dark, .dark *));
+@custom-variant brutal (&:where(.brutal, .brutal *));
+@custom-variant elegant (&:where(.elegant, .elegant *));
 
 @theme {
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
   --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, monospace;
+  --font-serif: "Cormorant Garamond", ui-serif, Georgia, Cambria, "Times New Roman", Times, serif;
 }
 
 body {
@@ -11,9 +16,27 @@ body {
 }
 
 .bg-study-pattern {
-  background-color: #e2e8f0;
-  background-image: linear-gradient(#cbd5e1 1px, transparent 1px),
-    linear-gradient(90deg, #cbd5e1 1px, transparent 1px);
+  background-color: #f1f5f9;
+  background-image: linear-gradient(#e2e8f0 1px, transparent 1px),
+    linear-gradient(90deg, #e2e8f0 1px, transparent 1px);
+  background-size: 24px 24px;
+}
+
+.dark .bg-study-pattern {
+  background-color: #0f172a;
+  background-image: linear-gradient(#1e293b 1px, transparent 1px),
+    linear-gradient(90deg, #1e293b 1px, transparent 1px);
+}
+
+.brutal .bg-study-pattern {
+  background-color: #fdf6e3; /* Light beige base for high contrast */
+  background-image: radial-gradient(#000000 1px, transparent 1px);
+  background-size: 20px 20px;
+}
+
+.elegant .bg-study-pattern {
+  background-color: #08090a;
+  background-image: radial-gradient(rgba(212, 175, 55, 0.15) 1px, transparent 1px);
   background-size: 24px 24px;
 }
 
@@ -25,9 +48,30 @@ body {
   background: transparent;
 }
 ::-webkit-scrollbar-thumb {
-  background-color: #d4d4d8;
+  background-color: #cbd5e1;
   border-radius: 20px;
 }
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #334155;
+}
+.brutal ::-webkit-scrollbar-thumb {
+  background-color: #000;
+  border-radius: 0px;
+  border: 1px solid #fff;
+}
 ::-webkit-scrollbar-thumb:hover {
-  background-color: #a1a1aa;
+  background-color: #94a3b8;
+}
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #475569;
+}
+.brutal ::-webkit-scrollbar-thumb:hover {
+  background-color: #ff3366; /* Vibrant hover for brutal */
+}
+.elegant ::-webkit-scrollbar-thumb {
+  background-color: rgba(212, 175, 55, 0.4);
+  border-radius: 4px;
+}
+.elegant ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(212, 175, 55, 0.7);
 }

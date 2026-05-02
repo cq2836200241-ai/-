@@ -14,9 +14,13 @@
     "@google/genai": "^1.29.0",
     "@tailwindcss/vite": "^4.1.14",
     "@vitejs/plugin-react": "^5.0.4",
+    "3000-words-list": "^0.0.3",
+    "aiciba": "^1.0.5",
     "cmu-pronouncing-dictionary": "^3.0.0",
     "dotenv": "^17.2.3",
+    "english-words": "^0.0.1",
     "express": "^4.21.2",
+    "ipa-dict": "^1.0.3",
     "lucide-react": "^0.546.0",
     "motion": "^12.23.24",
     "react": "^19.0.0",
@@ -30,6 +34,7 @@
     "tailwindcss": "^4.1.14",
     "tsx": "^4.21.0",
     "typescript": "~5.8.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "vite-plugin-pwa": "^1.2.0"
   }
 }
